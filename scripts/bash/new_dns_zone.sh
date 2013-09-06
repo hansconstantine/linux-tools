@@ -37,9 +37,10 @@ ns2ip=8.8.4.4
 read -p "Domain of New Zone: " primarydomain
 #Primary IP
 read -p "Primary IP of New Zone: " zoneip
-#Hostname
-read -p "Hostname: " primaryhostname
 
+#RNAME Field
+read -p "SOA Email Address: " rname
+rname=${rname/@/.}
 
 #MX Record Loop
 
@@ -79,11 +80,11 @@ serial=$(date +%s)
 cat << EOF
 
 \$TTL            86400
-@       IN      SOA     ${primarydomain}.       ${primaryhostname}.${primarydomain}. (
+@       IN      SOA     ${ns1}.       ${rname}. (
                         ${serial}	; serial
                         1H	; refresh
                         1M	; retry
-                        1W	; expiry
+			1W	; expiry
                         1D )	; minutes
 @       IN      NS      ${ns1}.
 @       IN      NS      ${ns2}.
