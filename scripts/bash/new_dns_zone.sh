@@ -36,7 +36,25 @@ serial=$(date +%s)
 #END CONFIG
 #
 
+
+
+
+#
+#MAGIC
+#
+zonepath=${zonepath%/}
+
+
+
+#
+#END MAGIC
+#
+
+
+
+#
 #Prompts
+#
 
 echo "Warning: Script must be run with root permissions!"
 
