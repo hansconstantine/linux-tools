@@ -51,6 +51,37 @@ zonepath=${zonepath%/}
 #
 
 
+#
+#FUNCTIONS
+#
+
+
+function warning()
+{
+	echo "$*" >&2
+}
+
+function error()
+{
+	echo "$*" >&2
+	exit 1
+}
+
+function yesno {
+	read -n 1 -p "$1" -r REPLY
+	if [[ $REPLY =~ ^[Yy]$ ]]
+	then
+		echo "1";
+	else
+		echo "0";
+	fi
+}
+
+
+#
+#END FUNCTIONS
+#
+
 
 #
 #Prompts
@@ -97,16 +128,24 @@ mailip=${mailip:-${zoneip}}
 #END Name Server Loop
 
 
+#Yes/No Test
 
+if [[ $(yesno "What is your answer? [y/n]: ") -eq 1 ]]; then
+	echo -e "\nYour Answer was Yes."
+else
+	echo -e "\nYour Answer was No."
+fi
+
+#End Yes/No Test
 
 
 #
 #TEMPORARY VARIABLES
 #
 
-displayzone=1
+displayzone=0
 createzone=0
-displaynamedconf=1
+displaynamedconf=0
 zonename=${primarydomain}
 zonefilename=${zonename}.zone
 
