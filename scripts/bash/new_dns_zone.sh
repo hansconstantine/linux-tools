@@ -6,32 +6,39 @@
 # 2013-09-06    Created by new_script.sh ver. 3.0
 # ---------------------------------------------------------------------------
 #
-#Settings/Get
 
-#DNS Server IP
-serverip=127.0.0.1
-#NSCount
-nscount=2
-#NS1
-ns1=ns1.dnsserver.com
-#NS2
-ns2=ns2.dnsserver.com
-#Additional Default Nameservers
-#ns3=
-#ns4=
-
-#NS1IP
-ns1ip=8.8.8.8
-#NS2IP
-ns2ip=8.8.4.4
-#Additional NS IPs
-#ns3ip=
-#ns4ip=
 
 #
-#Create New Zone File
+#CONFIG
+#
+
+#This DNS Servers IP
+serverip=127.0.0.1
+
+#NS1
+defaultns[1]=ns1.dnsserver.com
+#NS2
+defaultns[2]=ns2.dnsserver.com
+
+#NS1IP
+defaultnsip[1]=8.8.8.8
+#NS2IP
+defaultnsip[2]=8.8.4.4
+
+namedconf="/etc/named.conf"
+zonepath="/var/named/"
+
+#Serial Format
+serial=$(date +%s)
+
+
+#
+#END CONFIG
+#
 
 #Prompts
+
+echo "Warning: Script must be run with root permissions!"
 
 #Domain Name
 read -p "Domain of New Zone: " primarydomain
@@ -71,23 +78,40 @@ mailip=${mailip:-${zoneip}}
 
 #END Name Server Loop
 
-#Serial
-serial=$(date +%s)
 
 
-#Echo Template
 
-cat << EOF
 
+#
+#TEMPORARY VARIABLES
+#
+
+displayzone=1
+createzone=0
+displaynamedconf=1
+zonename=${primarydomain}
+zonefilename=${zonename}.zone
+
+#
+#END TEMPORARY VARIABLES
+#
+
+
+#Zone Template
+
+read -d '' zonetemplate << EOF
 \$TTL            86400
-@       IN      SOA     ${ns1}.       ${rname}. (
+@       IN      SOA     ${defaultns[1]}.       ${rname}. (
                         ${serial}	; serial
                         1H	; refresh
                         1M	; retry
 			1W	; expiry
                         1D )	; minutes
-@       IN      NS      ${ns1}.
-@       IN      NS      ${ns2}.
+$(for i in "${defaultns[@]}"
+	do
+		echo  "@       IN      NS      ${i}."
+	done
+)
 @       IN      A       ${zoneip}
 @       IN      MX      10	${mailprefix}.${primarydomain}.
 mail    IN      A       ${mailip}
@@ -95,5 +119,54 @@ www     IN      CNAME   ${primarydomain}.
 EOF
 
 
+#named.conf Template
+
+read -d '' namedconftemplate << EOF
+zone \"${zonename}\" IN {
+	type master;
+	file \"${zonepath}/${zonefilename}\";
+	allow-update { none; };
+};
+EOF
+
+
+
+#Display Template
+
+if [ "$displayzone" -eq 1 ]; then
+	cat << EOF
+#
+#
+#Zone File: ${zonepath}/${zonefilename}
+#
+#
+
+$zonetemplate
+
+EOF
+fi
+
+
+#Display named.conf Template
+
+if [ "$displaynamedconf" -eq 1 ]; then
+	cat << EOF
+#
+#
+#${namedconf}
+#
+#
+
+$namedconftemplate"
+
+EOF
+fi
 
 #Add Zone File to BIND config
+
+if [ "$createzone" -eq 1 ]; then
+	echo "Creating Zone File and adding to BIND configuration."
+	echo "$zonetemplate" > ${zonepath}/${zonefilename}
+	echo "$namedconftemplate" >> $namedconf
+
+fi
