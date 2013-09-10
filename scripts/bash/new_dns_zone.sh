@@ -71,9 +71,11 @@ function yesno {
 	read -n 1 -p "$1" -r REPLY
 	if [[ $REPLY =~ ^[Yy]$ ]]
 	then
+		echo >&2
 		echo "1";
 	else
-		echo "0";
+		echo >&2
+		exit 1;
 	fi
 }
 
@@ -130,10 +132,10 @@ mailip=${mailip:-${zoneip}}
 
 #Yes/No Test
 
-if [[ $(yesno "What is your answer? [y/n]: ") -eq 1 ]]; then
-	echo -e "\nYour Answer was Yes."
+if [[ $(yesno "What is your answer? [y/n]: ") ]]; then
+	echo "Your Answer was Yes."
 else
-	echo -e "\nYour Answer was No."
+	echo "Your Answer was No."
 fi
 
 #End Yes/No Test
@@ -222,7 +224,7 @@ fi
 #Add Zone File to BIND config
 
 if [ "$createzone" -eq 1 ]; then
-	echo "Creating Zone File and adding to BIND configuration."
+	warning "Creating Zone File and adding to BIND configuration."
 	echo "$zonetemplate" > ${zonepath}/${zonefilename}
 	echo "$namedconftemplate" >> $namedconf
 
