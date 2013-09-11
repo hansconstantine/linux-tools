@@ -150,6 +150,11 @@ createzone=0
 displaynamedconf=0
 zonename=${primarydomain}
 zonefilename=${zonename}.zone
+zonettl="86400"
+soarefresh='1H'
+soaretry='1M'
+soaexpiry='1W'
+soamaxcache='1D'
 
 #
 #END TEMPORARY VARIABLES
@@ -159,13 +164,13 @@ zonefilename=${zonename}.zone
 #Zone Template
 
 read -d '' zonetemplate << EOF
-\$TTL            86400
+\$TTL            ${zonettl}
 @       IN      SOA     ${defaultns[1]}.       ${rname}. (
                         ${serial}	; serial
-                        1H	; refresh
-                        1M	; retry
-			1W	; expiry
-                        1D )	; minutes
+                        ${soarefresh}	; slave refresh
+                        ${soaretry}	; slave retry time in case of a problem
+			${soaexpiry}	; slave expiry
+                        ${soamaxcache} )	; maximum caching time in case of failed lookups
 $(for i in "${defaultns[@]}"
 	do
 		echo  "@       IN      NS      ${i}."
