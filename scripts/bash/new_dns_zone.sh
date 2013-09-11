@@ -40,18 +40,30 @@ zonepath=${zonepath%/}
 
 #FUNCTIONS
 
+NORMAL=$(tput sgr0)
+GREEN=$(tput setaf 2; tput bold)
+YELLOW=$(tput setaf 3)
+RED=$(tput setaf 1)
+
+
+function success()
+{
+	echo -e "$GREEN$*$NORMAL" >&2
+}
+
 function warning()
 {
-	echo "$*" >&2
+	echo -e "$YELLOW$*$NORMAL" >&2
 }
 
 function error()
 {
-	echo "$*" >&2
+	echo -e "$RED$*$NORMAL" >&2
 	exit 1
 }
 
-function yesno {
+function yesno
+{
 	read -n 1 -p "$1" -r REPLY
 	if [[ $REPLY =~ ^[Yy]$ ]]
 	then
@@ -63,6 +75,11 @@ function yesno {
 	fi
 }
 
+function reloadbind
+{
+	rndc reconfig
+}
+
 #END FUNCTIONS
 
 
@@ -70,7 +87,12 @@ function yesno {
 
 #PROMPTS
 
-echo "Warning: Script must be run with root permissions!"
+if [[ $(/usr/bin/id -u) -ne 0 ]]; then
+	userroot=0
+	warning "Script must be run with root permissions to save zone file!"
+else
+	userroot=1
+fi
 
 #Domain Name
 read -p "Domain of New Zone: " primarydomain
@@ -166,10 +188,16 @@ fi
 
 #CREATE ZONE FILE
 
-if [[ $(yesno "Do you wish to create this zone file and add zone to named.conf? [y/n]: ") ]]; then
-	warning "Creating Zone File and adding to BIND configuration."
-	echo "$zonetemplate" > ${zonepath}/${zonefilename}
-	echo "$namedconftemplate" >> $namedconf
+if [[ userroot -eq 0 ]]; then
+	warning "Script is not running with root permission, so cannot save zone file and reload BIND! Exiting..."
+	exit
+else	
+	if [[ $(yesno "Do you wish to create this zone file and add zone to named.conf? [y/n]: ") ]]; then
+		warning "Creating Zone File and adding to BIND configuration."
+		echo "$zonetemplate" > ${zonepath}/${zonefilename}
+		echo "$namedconftemplate" >> $namedconf
+		reloadbind
+	fi
 fi
 
 #END CREATE ZONE FILE
