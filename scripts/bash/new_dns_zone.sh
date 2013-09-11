@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
 # new_dns_zone.sh - Create a new DNS zone for BIND.
-# Usage: dns.sh [-h|--help]
-# Revision history:
-# 2013-09-06    Created by new_script.sh ver. 3.0
 # ---------------------------------------------------------------------------
 #
 
-
-#
 #CONFIG
-#
+
 
 #This DNS Servers IP
 serverip=127.0.0.1
@@ -31,30 +26,19 @@ zonepath="/var/named/"
 #Serial Format
 serial=$(date +%s)
 
-
-#
 #END CONFIG
-#
 
 
+#MISC
 
-
-#
-#MAGIC
-#
 zonepath=${zonepath%/}
 
+#END MISC
 
 
-#
-#END MAGIC
-#
 
 
-#
 #FUNCTIONS
-#
-
 
 function warning()
 {
@@ -79,15 +63,12 @@ function yesno {
 	fi
 }
 
-
-#
 #END FUNCTIONS
-#
 
 
-#
-#Prompts
-#
+
+
+#PROMPTS
 
 echo "Warning: Script must be run with root permissions!"
 
@@ -100,8 +81,6 @@ read -p "Primary IP of New Zone: " zoneip
 read -p "SOA Email Address: " rname
 rname=${rname/@/.}
 
-#MX Record Loop
-
 #Get Mail Server Prefix
 read -p "Primary MX Record Prefix (Default: mail): " mailprefix
 mailprefix=${mailprefix:-mail}
@@ -109,45 +88,17 @@ mailprefix=${mailprefix:-mail}
 read -p "IP of Primary MX Record (Default: ${zoneip}): " mailip
 mailip=${mailip:-${zoneip}}
 
-#End MX Record Loop
+	#SECTIONS TODO
 
-#Start Name Server Loop
+		#Custom MX Records
 
-#Prompt: Default or Custom Nameservers, Default is $NS1 and $NS2, custom has $Primary IP appended to end of it, dont end with dot
+		#Custom NS Records
 
-#Custom Name Server 1: (Enter First Nameserver prefix)
-
-#Start Custom NS Loop (End if = '' or if Loop Count > $NSCount - 1 )
-
-#Increment Loop Count
-
-#Custom Name Server x: (Enter $x Nameserver Prefix or press ENTER to continue)
-
-#End Custom NS Loop
-
-#If Name Server x ends with $Primary Domain
-
-#END Name Server Loop
+#END PROMPTS
 
 
-#Yes/No Test
-
-if [[ $(yesno "What is your answer? [y/n]: ") ]]; then
-	echo "Your Answer was Yes."
-else
-	echo "Your Answer was No."
-fi
-
-#End Yes/No Test
-
-
-#
 #TEMPORARY VARIABLES
-#
 
-displayzone=0
-createzone=0
-displaynamedconf=0
 zonename=${primarydomain}
 zonefilename=${zonename}.zone
 zonettl="86400"
@@ -155,13 +106,13 @@ soarefresh='1H'
 soaretry='1M'
 soaexpiry='1W'
 soamaxcache='1D'
+mxweight=0
 
-#
 #END TEMPORARY VARIABLES
-#
 
 
-#Zone Template
+
+#ZONE TEMPLATE
 
 read -d '' zonetemplate << EOF
 \$TTL            ${zonettl}
@@ -177,13 +128,14 @@ $(for i in "${defaultns[@]}"
 	done
 )
 @       IN      A       ${zoneip}
-@       IN      MX      10	${mailprefix}.${primarydomain}.
+@       IN      MX      ${mxweight}	${mailprefix}.${primarydomain}.
 mail    IN      A       ${mailip}
 www     IN      CNAME   ${primarydomain}.
 EOF
 
+#END ZONE TEMPLATE
 
-#named.conf Template
+#NAMED.CONF TEMPLATE
 
 read -d '' namedconftemplate << EOF
 zone \"${zonename}\" IN {
@@ -193,11 +145,11 @@ zone \"${zonename}\" IN {
 };
 EOF
 
+#END NAMED.CONF TEMPLATE
 
+#DISPLAY NAMED.CONF
 
-#Display Template
-
-if [ "$displayzone" -eq 1 ]; then
+if [[ $(yesno "Do you want to preview zone file? [y/n]: ") ]]; then
 	cat << EOF
 #
 #
@@ -210,27 +162,14 @@ $zonetemplate
 EOF
 fi
 
+#END DISPLAY NAMED.CONF
 
-#Display named.conf Template
+#CREATE ZONE FILE
 
-if [ "$displaynamedconf" -eq 1 ]; then
-	cat << EOF
-#
-#
-#${namedconf}
-#
-#
-
-$namedconftemplate"
-
-EOF
-fi
-
-#Add Zone File to BIND config
-
-if [ "$createzone" -eq 1 ]; then
+if [[ $(yesno "Do you wish to create this zone file and add zone to named.conf? [y/n]: ") ]]; then
 	warning "Creating Zone File and adding to BIND configuration."
 	echo "$zonetemplate" > ${zonepath}/${zonefilename}
 	echo "$namedconftemplate" >> $namedconf
-
 fi
+
+#END CREATE ZONE FILE
